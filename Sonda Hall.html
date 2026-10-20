@@ -1,0 +1,387 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Sonda Hall</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: cuaderno de laboratorio — canvas grande a la izquierda, panel de controles y lectura a la derecha; apila en móvil. */
+:root{
+  --bg:#f6f4ee; --paper:#fffdf8; --ink:#1d2433; --muted:#5d6675; --line:#d9d4c7;
+  --grid:#e4e9ef; --accent:#b4531d; --accent2:#1f5f8b; --pos:#c23b3b; --neg:#2d5fb3;
+  --display:"Source Serif 4",Georgia,serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#15181f; --paper:#1d2129; --ink:#eae6dc; --muted:#a0a7b3; --line:#343a46; --grid:#262b35;
+  --accent:#e2834f; --accent2:#6fb1e0; --pos:#ef6b6b; --neg:#6d9df0; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#15181f; --paper:#1d2129; --ink:#eae6dc; --muted:#a0a7b3; --line:#343a46; --grid:#262b35;
+  --accent:#e2834f; --accent2:#6fb1e0; --pos:#ef6b6b; --neg:#6d9df0; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1100px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:18px}
+h1{font-family:var(--display);font-size:1.9rem;margin:0;text-wrap:balance}
+.eyebrow{font-family:var(--mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr);gap:18px}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--paper);border:1px solid var(--line);padding:14px;min-width:0}
+canvas{width:100%;height:auto;display:block;max-width:100%}
+.ctl{display:grid;gap:12px}
+.ctl label{display:flex;justify-content:space-between;font-size:.9rem;font-weight:500}
+.ctl output{font-family:var(--mono);color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.seg{display:flex;gap:0;border:1px solid var(--line)}
+.seg button{flex:1;background:transparent;border:0;padding:8px;font:inherit;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.seg button:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{background:var(--accent);color:#fff;border:0;padding:9px 12px;font:inherit;font-weight:500;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.meter{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:2rem;line-height:1;margin:4px 0}
+.meter small{font-size:1rem;color:var(--muted)}
+.formula{font-family:var(--mono);font-size:.88rem;background:var(--grid);padding:8px 10px;line-height:1.6;overflow-x:auto}
+p{line-height:1.5;max-width:65ch;margin:.4rem 0}
+h2{font-family:var(--display);font-size:1.15rem;margin:0 0 8px}
+.note{font-size:.85rem;color:var(--muted)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Guía 3 · Magnetismo · Applet 1</span>
+  <h1>Sonda Hall: cómo nace el voltaje Hall</h1>
+</header>
+
+<div class="grid">
+  <div class="panel">
+    <canvas id="cv" width="760" height="420"></canvas>
+    <div class="legend">
+      <span><i style="background:var(--accent)"></i>F<sub>B</sub> = q v × B</span>
+      <span><i style="background:var(--accent2)"></i>F<sub>E</sub> = q E (carga acumulada)</span>
+      <span>⊙ B hacia afuera · ⊗ B hacia adentro</span>
+    </div>
+    <p class="note">Las cargas se desvían por la fuerza magnética hasta que la carga acumulada en los bordes crea un campo E que la compensa. En equilibrio los portadores siguen derecho y entre los bordes queda V<sub>H</sub>. Apretá <b>Reiniciar transitorio</b> para ver la acumulación desde cero.</p>
+  </div>
+
+  <div class="panel ctl">
+    <h2>Controles</h2>
+    <div>
+      <label for="I">Corriente I <output id="Iv">10 mA</output></label>
+      <input type="range" id="I" min="-20" max="20" step="1" value="10">
+    </div>
+    <div>
+      <label for="B">Campo B (normal a la placa) <output id="Bv">50 mT</output></label>
+      <input type="range" id="B" min="-100" max="100" step="2" value="50">
+    </div>
+    <div>
+      <span class="note">Portadores</span>
+      <div class="seg" role="group" aria-label="tipo de portador">
+        <button id="el" aria-pressed="true">Electrones (q &lt; 0)</button>
+        <button id="ho" aria-pressed="false">Huecos (q &gt; 0)</button>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn" id="reset">Reiniciar transitorio</button>
+      <button class="btn alt" id="flip">Girar la sonda 180°</button>
+    </div>
+
+    <h2>Lectura</h2>
+    <div class="note">V<sub>H</sub> = V<sub>arriba</sub> − V<sub>abajo</sub></div>
+    <div class="meter"><span id="VH">0.00</span> <small>mV</small></div>
+    <div class="formula">
+      |V<sub>H</sub>| = I·B / (n·|q|·t)<br>
+      n = 1×10<sup>21</sup> m<sup>−3</sup> · t = 0.5 mm · |q| = e<br>
+      <span id="calc"></span>
+    </div>
+    <p class="note">Para una corriente fija, V<sub>H</sub> es proporcional a la componente de B normal a la placa: eso es lo que calibrás con la bobina. Girar la sonda 180° invierte el signo de la lectura.</p>
+  </div>
+</div>
+
+<div class="panel" style="margin-top:18px">
+  <h2>V<sub>H</sub> en función de B (para la corriente elegida)</h2>
+  <canvas id="plot" width="760" height="240"></canvas>
+</div>
+
+<div class="panel" style="margin-top:18px">
+  <h2>Cómo se calibra la sonda</h2>
+  <p>La placa DAQ entrega el voltaje Hall (o un número proporcional a él), pero no sabemos de antemano cuántos mV corresponden a cada mT. Calibrar es medir esa constante usando un campo conocido como patrón.</p>
+  <p><b>1. El patrón.</b> El campo en el centro de una bobina recorrida por corriente continua es uniforme y se calcula a partir de magnitudes que sí se miden bien: B<sub>bobina</sub> = α·μ₀·N·I / (2R). Conocés N y R de la bobina, medís I con el amperímetro y α es el factor geométrico (≈ 0.28 en la guía, a verificar).</p>
+  <p><b>2. El montaje.</b> Fuente de tensión, resistencia variable para regular la corriente, la bobina y el amperímetro en serie. La sonda va en el centro de la bobina con el punto blanco de la punta perpendicular al eje, porque mide la componente de B normal a la punta. Con la sonda en el rango LO (hasta ±6.4 mT) alcanza para campos de bobina típicos.</p>
+  <p><b>3. La toma de datos.</b> Para varias corrientes, incluyendo el sentido invertido, anotás I, calculás B<sub>bobina</sub> y registrás la lectura V<sub>H</sub>. Conviene cubrir todo el rango que vas a usar después y repetir los extremos.</p>
+  <p><b>4. El ajuste.</b> Graficás V<sub>H</sub> en función de B<sub>bobina</sub> y ajustás una recta V<sub>H</sub> = m·B + b. La pendiente m es la sensibilidad de la sonda (mV/mT) y la ordenada b es el offset: la lectura con campo nulo, que incluye el propio campo terrestre y el cero del sensor.</p>
+  <p><b>5. Usar la sonda.</b> A partir de ahí cualquier campo desconocido se obtiene invirtiendo la recta: B = (V<sub>H</sub> − b) / m. Es exactamente lo que hacés después para medir el campo magnético terrestre.</p>
+
+  <h2 style="margin-top:14px">Simulación de la calibración</h2>
+  <div class="grid">
+    <div>
+      <canvas id="cal" width="760" height="280"></canvas>
+      <div class="formula" id="calfit">Registrá al menos dos puntos con distintas corrientes. La pendiente del ajuste es la sensibilidad de la sonda.</div>
+    </div>
+    <div class="ctl">
+      <div><label for="Ib">Corriente en la bobina I <output id="Ibv">1.00 A</output></label><input type="range" id="Ib" min="-3" max="3" step="0.05" value="1"></div>
+      <div class="formula">bobina: N = 200 · R = 5.0 cm · α = 0.28<br>B<sub>bobina</sub> = <span id="Bbob">0</span> mT<br>lectura de la sonda: V<sub>H</sub> = <span id="Vcal">0</span> mV</div>
+      <div class="row">
+        <button class="btn" id="caladd">Registrar punto</button>
+        <button class="btn alt" id="calclr">Borrar</button>
+      </div>
+      <div style="max-height:170px;overflow:auto"><table style="border-collapse:collapse;font-family:var(--mono);font-size:.8rem;width:100%"><thead><tr><th style="text-align:right;color:var(--muted);font-weight:500">I (A)</th><th style="text-align:right;color:var(--muted);font-weight:500">B (mT)</th><th style="text-align:right;color:var(--muted);font-weight:500">V<sub>H</sub> (mV)</th></tr></thead><tbody id="calrows"></tbody></table></div>
+      <p class="note">La sonda simulada tiene una sensibilidad y un offset que no conocés de antemano, más un poco de ruido de lectura. El ajuste debería recuperarlos.</p>
+    </div>
+  </div>
+</div>
+
+<div class="panel" style="margin-top:18px">
+  <h2>Medir el campo terrestre con la sonda calibrada</h2>
+  <p>Bobina apagada, sonda en el rango HI (más sensible: m<sub>HI</sub> = 20·m<sub>LO</sub>, con otro offset que no conocés). La lectura es V = m<sub>HI</sub>·B<sub>T</sub>·cos φ + b<sub>HI</sub>, donde φ es el ángulo entre la normal de la punta y el norte. Girá la sonda, registrá una lectura, giala 180° y registrá la otra: la resta cancela el offset y da la componente del campo terrestre en la dirección de la punta; la suma da el offset.</p>
+  <div class="grid">
+    <div>
+      <canvas id="tv" width="760" height="300"></canvas>
+      <canvas id="tplot" width="760" height="200"></canvas>
+    </div>
+    <div class="ctl">
+      <div><label for="phi">Orientación de la punta φ <output id="phiv">0°</output></label><input type="range" id="phi" min="0" max="359" step="1" value="0"></div>
+      <div class="row">
+        <button class="btn alt" id="rot180">Girar 180°</button>
+        <button class="btn" id="tadd">Registrar lectura</button>
+        <button class="btn alt" id="tclr">Borrar</button>
+      </div>
+      <div class="formula">lectura (rango HI): V = <span id="tV">0</span> mV<br>m<sub>HI</sub> = 20 · m<sub>LO</sub> = <span id="mHI">?</span> mV/mT <span class="note">(usa tu calibración de arriba)</span></div>
+      <table style="border-collapse:collapse;font-family:var(--mono);font-size:.8rem;width:100%"><thead><tr><th style="text-align:right;color:var(--muted);font-weight:500">φ (°)</th><th style="text-align:right;color:var(--muted);font-weight:500">V (mV)</th></tr></thead><tbody id="trows"></tbody></table>
+      <div class="formula" id="tres">Registrá dos lecturas, idealmente a 180° una de la otra.</div>
+      <p class="note">Probá también barrer φ y mirar el gráfico: el máximo de V señala la dirección del norte magnético y la amplitud de la curva es m<sub>HI</sub>·B<sub>T</sub>.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+(function(){
+const e=1.602e-19, n=1e21, t=0.5e-3;
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const pl=document.getElementById('plot'), pctx=pl.getContext('2d');
+const $=id=>document.getElementById(id);
+let I=10, B=50, qsign=-1, s=0; // s: fracción de carga acumulada (0→1)
+function redistribute(){ for(const p of P){ p.y=slab.y+10+Math.random()*(slab.h-20); } }
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// portadores
+const N=70, P=[];
+const slab={x:90,y:120,w:560,h:180};
+for(let i=0;i<N;i++) P.push({x:slab.x+Math.random()*slab.w, y:slab.y+10+Math.random()*(slab.h-20)});
+
+function VH(){ return -(I*1e-3)*(B*1e-3)/(n*qsign*e*t)*1e3; } // mV, signo: V_arriba - V_abajo
+
+function update(){
+  $('Iv').textContent=I+' mA'; $('Bv').textContent=B+' mT';
+  const v=VH();
+  $('VH').textContent=(v*s).toFixed(2);
+  $('calc').textContent=`|V_H| = ${Math.abs(I)}e-3 · ${Math.abs(B)}e-3 / (1e21 · 1.6e-19 · 5e-4) = ${Math.abs(v).toFixed(2)} mV`;
+  drawPlot();
+}
+$('I').oninput=ev=>{I=+ev.target.value;update()};
+$('B').oninput=ev=>{B=+ev.target.value;update()};
+$('el').onclick=()=>{qsign=-1;$('el').ariaPressed='true';$('ho').ariaPressed='false';s=0;redistribute();update()};
+$('ho').onclick=()=>{qsign=1;$('ho').ariaPressed='true';$('el').ariaPressed='false';s=0;redistribute();update()};
+$('reset').onclick=()=>{s=0;redistribute();update()};
+$('flip').onclick=()=>{B=-B;$('B').value=B;s=0;redistribute();update()};
+
+function arrow(c,x1,y1,x2,y2,col,w){
+  c.strokeStyle=col;c.fillStyle=col;c.lineWidth=w||2;
+  c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();
+  const a=Math.atan2(y2-y1,x2-x1),L=9;
+  c.beginPath();c.moveTo(x2,y2);c.lineTo(x2-L*Math.cos(a-0.5),y2-L*Math.sin(a-0.5));c.lineTo(x2-L*Math.cos(a+0.5),y2-L*Math.sin(a+0.5));c.closePath();c.fill();
+}
+
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(Math.abs(I)>0&&Math.abs(B)>0) s=Math.min(1,s+dt/1.8); // carga en bordes crece con tau≈1.8s
+  const ink=css('--ink'),muted=css('--muted'),paper=css('--paper'),grid=css('--grid'),acc=css('--accent'),acc2=css('--accent2'),pos=css('--pos'),neg=css('--neg');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  // placa
+  ctx.fillStyle=grid;ctx.strokeStyle=ink;ctx.lineWidth=2;
+  ctx.fillRect(slab.x,slab.y,slab.w,slab.h);ctx.strokeRect(slab.x,slab.y,slab.w,slab.h);
+  // símbolos de B
+  const sym=B>0?'⊙':(B<0?'⊗':'·');
+  ctx.fillStyle=muted;ctx.font='18px '+css('--mono');ctx.textAlign='center';ctx.textBaseline='middle';
+  if(B!==0) for(let gx=slab.x+35;gx<slab.x+slab.w;gx+=70) for(let gy=slab.y+30;gy<slab.y+slab.h;gy+=60) ctx.fillText(sym,gx,gy);
+  // corriente
+  ctx.font='15px '+css('--body');ctx.fillStyle=ink;ctx.textAlign='left';
+  const dirI=Math.sign(I);
+  if(dirI!==0){ arrow(ctx,20,slab.y+slab.h/2-(dirI>0?0:0),slab.x-8,slab.y+slab.h/2,ink,3); arrow(ctx,slab.x+slab.w+8,slab.y+slab.h/2,cv.width-20,slab.y+slab.h/2,ink,3); }
+  ctx.fillText(`I = ${I} mA ${dirI>0?'→':(dirI<0?'←':'')}`,20,slab.y-70);
+  ctx.fillText(`B = ${B} mT ${sym}`,20,slab.y-45);
+  ctx.fillText(`portadores: ${qsign<0?'electrones':'huecos'}`,20,slab.y-20);
+  // velocidad y fuerza
+  const vx=qsign*dirI; // dirección de v de los portadores en x
+  const Fy=-(qsign)*vx*Math.sign(B); // signo de F_y en coords matemáticas (+ = arriba)
+  const defl=-Fy; // en canvas (+ = abajo)
+  // cargas acumuladas en bordes
+  const edgeSign=qsign; // la carga que llega al borde tiene el signo de los portadores
+  const sideDown=defl>0;
+  if(s>0 && Fy!==0){
+    ctx.globalAlpha=s;
+    for(let gx=slab.x+14;gx<slab.x+slab.w;gx+=22){
+      const yAcc=sideDown?slab.y+slab.h-8:slab.y+8, yOpp=sideDown?slab.y+8:slab.y+slab.h-8;
+      ctx.fillStyle=edgeSign>0?pos:neg;ctx.font='bold 14px '+css('--mono');ctx.textAlign='center';
+      ctx.fillText(edgeSign>0?'+':'−',gx,yAcc);
+      ctx.fillStyle=edgeSign>0?neg:pos;ctx.fillText(edgeSign>0?'−':'+',gx,yOpp);
+    }
+    ctx.globalAlpha=1;
+  }
+  // mover y dibujar portadores
+  const sp=Math.abs(I)*7, dy=defl*(1-s)*Math.abs(B)*0.45;
+  for(const p of P){
+    if(!reduce){ p.x+=vx*sp*dt; p.y+=dy*dt; }
+    if(p.x>slab.x+slab.w) p.x=slab.x; if(p.x<slab.x) p.x=slab.x+slab.w;
+    p.y=Math.max(slab.y+6,Math.min(slab.y+slab.h-6,p.y));
+    ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fillStyle=qsign<0?neg:pos;ctx.fill();
+  }
+  // portador destacado con fuerzas
+  const h=P[0];
+  ctx.beginPath();ctx.arc(h.x,h.y,7,0,Math.PI*2);ctx.strokeStyle=ink;ctx.lineWidth=2;ctx.stroke();
+  if(Fy!==0&&I!==0){
+    const L=55*Math.min(1,Math.abs(B)/100);
+    arrow(ctx,h.x,h.y,h.x,h.y+defl*L,acc,3);
+    if(s>0.02) arrow(ctx,h.x+1,h.y,h.x+1,h.y-defl*L*s,acc2,3);
+    if(vx!==0) arrow(ctx,h.x,h.y,h.x+vx*30,h.y,muted,2);
+  }
+  // voltímetro
+  const vh=VH()*s;
+  ctx.strokeStyle=ink;ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(slab.x+slab.w-40,slab.y);ctx.lineTo(slab.x+slab.w-40,slab.y-30);ctx.lineTo(slab.x+slab.w+60,slab.y-30);ctx.lineTo(slab.x+slab.w+60,slab.y+slab.h+30);ctx.lineTo(slab.x+slab.w-40,slab.y+slab.h+30);ctx.lineTo(slab.x+slab.w-40,slab.y+slab.h);ctx.stroke();ctx.setLineDash([]);
+  const my=slab.y+28;
+  ctx.fillStyle=paper;ctx.beginPath();ctx.arc(slab.x+slab.w+60,my,28,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle=ink;ctx.font='bold 13px '+css('--mono');ctx.textAlign='center';
+  ctx.fillText('V',slab.x+slab.w+60,my-8);
+  ctx.fillText(vh.toFixed(1)+' mV',slab.x+slab.w+60,my+9);
+  ctx.font='11px '+css('--body');ctx.fillStyle=muted;ctx.fillText('arriba',slab.x+slab.w-40,slab.y-36);ctx.fillText('abajo',slab.x+slab.w-40,slab.y+slab.h+42);
+  // estado
+  ctx.textAlign='right';ctx.fillStyle=muted;ctx.font='13px '+css('--body');
+  ctx.fillText(s<1?`transitorio: carga en bordes ${Math.round(s*100)} %`:'equilibrio: F_E = −F_B, portadores sin desviación',cv.width-20,cv.height-16);
+  $('VH').textContent=vh.toFixed(2);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+function drawPlot(){
+  const W=pl.width,H=pl.height,ml=70,mr=20,mt=16,mb=40;
+  const ink=css('--ink'),muted=css('--muted'),grid=css('--line'),acc=css('--accent');
+  pctx.clearRect(0,0,W,H);
+  const k=Math.abs(I*1e-3)/(n*e*t)*1e-3*1e3; // mV por mT
+  const vmax=Math.max(1,Math.ceil(k*100/5)*5);
+  const X=b=>ml+(b+100)/200*(W-ml-mr), Y=v=>mt+(1-(v+vmax)/(2*vmax))*(H-mt-mb);
+  pctx.strokeStyle=grid;pctx.lineWidth=1;pctx.font='12px '+css('--mono');pctx.fillStyle=muted;
+  for(let b=-100;b<=100;b+=50){pctx.beginPath();pctx.moveTo(X(b),mt);pctx.lineTo(X(b),H-mb);pctx.stroke();pctx.textAlign='center';pctx.fillText(b,X(b),H-mb+16)}
+  for(let i=-2;i<=2;i++){const v=i*vmax/2;pctx.beginPath();pctx.moveTo(ml,Y(v));pctx.lineTo(W-mr,Y(v));pctx.stroke();pctx.textAlign='right';pctx.fillText(v.toFixed(1),ml-6,Y(v)+4)}
+  pctx.fillStyle=ink;pctx.textAlign='center';pctx.fillText('B (mT)',(ml+W-mr)/2,H-6);
+  pctx.save();pctx.translate(14,(mt+H-mb)/2);pctx.rotate(-Math.PI/2);pctx.fillText('V_H (mV)',0,0);pctx.restore();
+  const slope=-(I*1e-3)/(n*qsign*e*t)*1e-3*1e3;
+  pctx.strokeStyle=acc;pctx.lineWidth=2.5;pctx.beginPath();pctx.moveTo(X(-100),Y(slope*-100));pctx.lineTo(X(100),Y(slope*100));pctx.stroke();
+  pctx.fillStyle=ink;pctx.beginPath();pctx.arc(X(B),Y(slope*B),6,0,Math.PI*2);pctx.fill();
+  pctx.textAlign='left';pctx.fillStyle=muted;pctx.fillText(`pendiente = ${slope.toFixed(3)} mV/mT  (I = ${I} mA)`,ml+8,mt+14);
+}
+update();
+
+// ---- simulación de calibración ----
+const cal=$('cal'),cc=cal.getContext('2d');
+const SENS=0.125+0.03*(Math.random()-0.5), OFF=0.4*(Math.random()-0.5); // mV/mT y mV, "desconocidos"
+const mu0=4*Math.PI*1e-7, Nb=200, Rb=0.05, alb=0.28;
+let Ib=1; const cdata=[];
+const Bbob=i=>alb*mu0*Nb*i/(2*Rb)*1e3; // mT
+const Vread=b=>SENS*b+OFF+(Math.random()-0.5)*0.02;
+let Vnow=Vread(Bbob(Ib));
+function calUpdate(){ $('Ibv').textContent=Ib.toFixed(2)+' A'; $('Bbob').textContent=Bbob(Ib).toFixed(3); $('Vcal').textContent=Vnow.toFixed(3); drawCal(); }
+function calFit(){ const n=cdata.length; if(n<2) return null; let sx=0,sy=0,sxx=0,sxy=0; for(const d of cdata){sx+=d.b;sy+=d.v;sxx+=d.b*d.b;sxy+=d.b*d.v}
+  const den=n*sxx-sx*sx; if(Math.abs(den)<1e-12) return null; const m=(n*sxy-sx*sy)/den, b=(sy-m*sx)/n; return {m,b}; }
+function drawCal(){
+  const W=cal.width,H=cal.height,ml=70,mr=20,mt=16,mb=40;
+  const ink=css('--ink'),muted=css('--muted'),grid=css('--line'),acc=css('--accent');
+  cc.clearRect(0,0,W,H);
+  const bmax=2.4, vmax=Math.ceil((SENS*bmax+Math.abs(OFF))*1.2*10)/10;
+  const X=b=>ml+(b+bmax)/(2*bmax)*(W-ml-mr), Y=v=>mt+(1-(v+vmax)/(2*vmax))*(H-mt-mb);
+  cc.strokeStyle=grid;cc.lineWidth=1;cc.font='12px '+css('--mono');cc.fillStyle=muted;
+  for(let i=-4;i<=4;i++){const b=i*bmax/4;cc.beginPath();cc.moveTo(X(b),mt);cc.lineTo(X(b),H-mb);cc.stroke();cc.textAlign='center';cc.fillText(b.toFixed(1),X(b),H-mb+16)}
+  for(let i=-2;i<=2;i++){const v=i*vmax/2;cc.beginPath();cc.moveTo(ml,Y(v));cc.lineTo(W-mr,Y(v));cc.stroke();cc.textAlign='right';cc.fillText(v.toFixed(2),ml-6,Y(v)+4)}
+  cc.fillStyle=ink;cc.textAlign='center';cc.fillText('B_bobina (mT)',(ml+W-mr)/2,H-6);
+  cc.save();cc.translate(14,(mt+H-mb)/2);cc.rotate(-Math.PI/2);cc.fillText('V_H (mV)',0,0);cc.restore();
+  const f=calFit();
+  if(f){cc.strokeStyle=acc;cc.lineWidth=2.5;cc.beginPath();cc.moveTo(X(-bmax),Y(f.m*-bmax+f.b));cc.lineTo(X(bmax),Y(f.m*bmax+f.b));cc.stroke()}
+  cc.fillStyle=ink;for(const d of cdata){cc.beginPath();cc.arc(X(d.b),Y(d.v),5,0,Math.PI*2);cc.fill()}
+  cc.strokeStyle=muted;cc.setLineDash([3,4]);cc.beginPath();cc.moveTo(X(Bbob(Ib)),mt);cc.lineTo(X(Bbob(Ib)),H-mb);cc.stroke();cc.setLineDash([]);
+  $('calfit').innerHTML=f?`Ajuste (${cdata.length} puntos): V<sub>H</sub> = (<b>${f.m.toFixed(4)}</b> mV/mT) · B + (<b>${f.b.toFixed(3)}</b> mV)<br>sensibilidad m = ${f.m.toFixed(4)} mV/mT · offset b = ${f.b.toFixed(3)} mV · para medir: B = (V<sub>H</sub> − b)/m<br><span style="color:var(--muted)">valores "reales" de la sonda simulada: ${SENS.toFixed(4)} mV/mT, ${OFF.toFixed(3)} mV</span>`
+    :'Registrá al menos dos puntos con distintas corrientes. La pendiente del ajuste es la sensibilidad de la sonda.';
+}
+$('Ib').addEventListener('input',e=>{Ib=+e.target.value;Vnow=Vread(Bbob(Ib));calUpdate()});
+$('caladd').onclick=()=>{const b=Bbob(Ib);cdata.push({b,v:Vnow});const tr=document.createElement('tr');tr.innerHTML=`<td style="text-align:right;padding:3px 6px;border-bottom:1px solid var(--line)">${Ib.toFixed(2)}</td><td style="text-align:right;padding:3px 6px;border-bottom:1px solid var(--line)">${b.toFixed(3)}</td><td style="text-align:right;padding:3px 6px;border-bottom:1px solid var(--line)">${Vnow.toFixed(3)}</td>`;$('calrows').appendChild(tr);Vnow=Vread(b);calUpdate()};
+$('calclr').onclick=()=>{cdata.length=0;$('calrows').innerHTML='';calUpdate()};
+calUpdate();
+
+// ---- medición del campo terrestre ----
+const tv=$('tv'),tc=tv.getContext('2d'),tp=$('tplot'),tpc=tp.getContext('2d');
+const BT=0.018, mHI=20*SENS, OFFHI=0.16*(Math.random()-0.5); // mT, mV/mT, mV
+let phi=0; const tdata=[];
+const tread=ph=>mHI*BT*Math.cos(ph*Math.PI/180)+OFFHI+(Math.random()-0.5)*0.003;
+let tV=tread(0);
+function tUpdate(){
+  $('phiv').textContent=phi+'°'; $('tV').textContent=tV.toFixed(4);
+  const f=calFit(); $('mHI').textContent=f?(20*f.m).toFixed(3):'calibrá primero';
+  drawTV(); drawTP();
+  if(tdata.length>=2){
+    const a=tdata[tdata.length-2], b2=tdata[tdata.length-1];
+    const m=f?20*f.m:mHI, Bn=(a.v-b2.v)/(2*m), off=(a.v+b2.v)/2;
+    const dphi=((b2.phi-a.phi)%360+360)%360;
+    const ok=Math.abs(dphi-180)<1;
+    $('tres').innerHTML=`Últimas dos lecturas (φ = ${a.phi}° y ${b2.phi}°${ok?'':', <b>no están a 180°</b>'}):<br>
+      (V₁ − V₂) / (2·m<sub>HI</sub>) = (${a.v.toFixed(4)} − ${b2.v.toFixed(4)}) / (2·${m.toFixed(3)}) = <b>${(Bn*1e3).toFixed(1)} μT</b> → componente de B<sub>T</sub> según la punta en φ = ${a.phi}°<br>
+      (V₁ + V₂) / 2 = <b>${off.toFixed(4)} mV</b> → offset del rango HI<br>
+      <span style="color:var(--muted)">valores simulados: B<sub>T</sub>·cos φ₁ = ${(BT*Math.cos(a.phi*Math.PI/180)*1e3).toFixed(1)} μT, offset = ${OFFHI.toFixed(4)} mV${ok?'':' (sin 180° exactos la resta no cancela bien el offset)'}</span>`;
+  } else $('tres').innerHTML='Registrá dos lecturas, idealmente a 180° una de la otra.';
+}
+function drawTV(){
+  const W=tv.width,H=tv.height,cx=W/2,cy=H/2,Rc=110;
+  const ink=css('--ink'),muted=css('--muted'),paper=css('--paper'),grid=css('--line'),acc=css('--accent'),acc2=css('--accent2');
+  tc.clearRect(0,0,W,H);
+  tc.strokeStyle=grid;tc.lineWidth=1;tc.beginPath();tc.arc(cx,cy,Rc,0,Math.PI*2);tc.stroke();
+  tc.fillStyle=muted;tc.font='bold 13px '+css('--display');tc.textAlign='center';tc.textBaseline='middle';
+  tc.fillText('N',cx,cy-Rc-14);tc.fillText('S',cx,cy+Rc+14);tc.fillText('E',cx+Rc+14,cy);tc.fillText('O',cx-Rc-14,cy);
+  arrow(tc,cx-Rc-60,cy+Rc*0.5,cx-Rc-60,cy-Rc*0.5,acc2,3); tc.fillStyle=acc2;tc.font='12px '+css('--body');tc.fillText('B_T (horizontal)',cx-Rc-60,cy-Rc*0.5-14);
+  const a=phi*Math.PI/180;
+  tc.save();tc.translate(cx,cy);tc.rotate(a);
+  tc.fillStyle=acc;tc.fillRect(-9,-30,18,60); tc.fillStyle=paper;tc.beginPath();tc.arc(0,-22,3,0,Math.PI*2);tc.fill();
+  tc.strokeStyle=ink;tc.lineWidth=2;tc.beginPath();tc.moveTo(0,30);tc.lineTo(0,80);tc.stroke();
+  tc.restore();
+  arrow(tc,cx+(Rc*0.3)*Math.sin(a),cy-(Rc*0.3)*Math.cos(a),cx+(Rc*0.8)*Math.sin(a),cy-(Rc*0.8)*Math.cos(a),ink,2);
+  tc.fillStyle=ink;tc.textAlign='left';tc.textBaseline='alphabetic';tc.font='13px '+css('--body');
+  tc.fillText('normal de la punta (punto blanco)',cx+Rc+40,cy+Rc-20);tc.fillText(`φ = ${phi}°  ·  B_T·cos φ = ${(BT*Math.cos(a)*1e3).toFixed(1)} μT`,cx+Rc+40,cy+Rc);
+  tc.fillText('vista desde arriba, bobina apagada',12,H-10);
+}
+function drawTP(){
+  const W=tp.width,H=tp.height,ml=70,mr=20,mt=14,mb=36;
+  const ink=css('--ink'),muted=css('--muted'),grid=css('--line'),acc2=css('--accent2');
+  tpc.clearRect(0,0,W,H);
+  const amp=mHI*BT, vmin=OFFHI-amp*1.4, vmax=OFFHI+amp*1.4;
+  const X=p=>ml+p/360*(W-ml-mr), Y=v=>mt+(1-(v-vmin)/(vmax-vmin))*(H-mt-mb);
+  tpc.strokeStyle=grid;tpc.lineWidth=1;tpc.font='11px '+css('--mono');tpc.fillStyle=muted;
+  for(let p=0;p<=360;p+=90){tpc.beginPath();tpc.moveTo(X(p),mt);tpc.lineTo(X(p),H-mb);tpc.stroke();tpc.textAlign='center';tpc.fillText(p,X(p),H-mb+14)}
+  for(let i=0;i<=2;i++){const v=vmin+(vmax-vmin)*i/2;tpc.beginPath();tpc.moveTo(ml,Y(v));tpc.lineTo(W-mr,Y(v));tpc.stroke();tpc.textAlign='right';tpc.fillText(v.toFixed(3),ml-5,Y(v)+4)}
+  tpc.fillStyle=ink;tpc.textAlign='center';tpc.fillText('φ (°)',(ml+W-mr)/2,H-4);
+  tpc.save();tpc.translate(12,(mt+H-mb)/2);tpc.rotate(-Math.PI/2);tpc.fillText('V (mV)',0,0);tpc.restore();
+  tpc.strokeStyle=acc2;tpc.lineWidth=1.5;tpc.setLineDash([4,4]);tpc.beginPath();
+  for(let p=0;p<=360;p+=3){const v=mHI*BT*Math.cos(p*Math.PI/180)+OFFHI;p?tpc.lineTo(X(p),Y(v)):tpc.moveTo(X(p),Y(v))}tpc.stroke();tpc.setLineDash([]);
+  tpc.fillStyle=ink;for(const d of tdata){tpc.beginPath();tpc.arc(X(d.phi),Y(d.v),4,0,Math.PI*2);tpc.fill()}
+  tpc.fillStyle=css('--accent');tpc.beginPath();tpc.arc(X(phi),Y(tV),5,0,Math.PI*2);tpc.fill();
+  tpc.fillStyle=muted;tpc.textAlign='left';tpc.fillText('punteada: m_HI·B_T·cos φ + b_HI · puntos: lecturas registradas',ml+6,mt+10);
+}
+$('phi').addEventListener('input',e=>{phi=+e.target.value;tV=tread(phi);tUpdate()});
+$('rot180').onclick=()=>{phi=(phi+180)%360;$('phi').value=phi;tV=tread(phi);tUpdate()};
+$('tadd').onclick=()=>{tdata.push({phi,v:tV});const tr=document.createElement('tr');tr.innerHTML=`<td style="text-align:right;padding:3px 6px;border-bottom:1px solid var(--line)">${phi}</td><td style="text-align:right;padding:3px 6px;border-bottom:1px solid var(--line)">${tV.toFixed(4)}</td>`;$('trows').appendChild(tr);tV=tread(phi);tUpdate()};
+$('tclr').onclick=()=>{tdata.length=0;$('trows').innerHTML='';tUpdate()};
+$('caladd').addEventListener('click',tUpdate);$('calclr').addEventListener('click',tUpdate);
+tUpdate();
+})();
+</script>
+
+</body></html>
